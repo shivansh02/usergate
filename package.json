@@ -11,15 +11,21 @@
     "db:push": "drizzle-kit push drizzle.config.ts"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.4.1",
     "@neondatabase/serverless": "^0.9.4",
-    "drizzle-orm": "^0.31.2",
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.31.4",
     "next": "14.2.4",
+    "next-auth": "5.0.0-beta.19",
     "pg": "^8.12.0",
+    "postgres": "^3.4.4",
     "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "dotenv": "^16.4.5"
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

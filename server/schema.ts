@@ -1,43 +1,93 @@
-import { pgTable, serial, text, varchar, integer, timestamp, primaryKey, unique, foreignKey, pgEnum } from 'drizzle-orm/pg-core';
-
-export const Role = pgEnum('Role', ['USER', 'MOD', 'ADMIN']);
-export const AccessLevel = pgEnum('AccessLevel', ['PUBLIC', 'PRIVATE', 'CLASSIFIED']);
-
-export const User = pgTable('User', {
-  id: serial('id').primaryKey(),
-  email: varchar('email', { length: 255 }).unique().notNull(),
-  password: varchar('password', { length: 255 }).notNull(),
-  name: varchar('name', { length: 255 }),
-  role: Role('role').notNull().default('USER'),
-  createdAt: timestamp('createdAt').defaultNow().notNull(),
-  updatedAt: timestamp('updatedAt').defaultNow().notNull(),
+import {
+  boolean,
+  timestamp,
+  pgTable,
+  text,
+  primaryKey,
+  integer,
+} from "drizzle-orm/pg-core"
+import postgres from "postgres"
+import { drizzle } from "drizzle-orm/postgres-js"
+import type { AdapterAccountType } from "next-auth/adapters"
+ 
+const connectionString = "postgres://postgres:postgres@localhost:5432/drizzle"
+const pool = postgres(connectionString, { max: 1 })
+ 
+export const db = drizzle(pool)
+ 
+export const users = pgTable("user", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text("name"),
+  email: text("email").notNull(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  image: text("image"),
+  password: text("password").notNull(),
 });
-
-export const Tenant = pgTable('Tenant', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 255 }).notNull(),
-  createdAt: timestamp('createdAt').defaultNow().notNull(),
-  updatedAt: timestamp('updatedAt').defaultNow().notNull(),
-});
-
-export const TenantUser = pgTable('TenantUser', {
-    id: serial('id').primaryKey(),
-    userId: integer('userId').notNull().references(() => User.id),
-    tenantId: integer('tenantId').notNull().references(() => Tenant.id),
-    role: Role('role').notNull().default('USER'),
-    createdAt: timestamp('createdAt').defaultNow().notNull(),
-    updatedAt: timestamp('updatedAt').defaultNow().notNull(),
-  }, (table) => ({
-    uniqueUserTenant: unique('unique_user_tenant').on(table.userId, table.tenantId).nullsNotDistinct(),
-  }));
-
-export const Resource = pgTable('Resource', {
-  id: serial('id').primaryKey(),
-  title: varchar('title', { length: 255 }).notNull(),
-  url: text('url').notNull(),
-  accessLevel: AccessLevel('accessLevel').notNull().default('PUBLIC'),
-  userId: integer('userId').references(() => User.id),
-  tenantId: integer('tenantId').references(() => Tenant.id),
-  createdAt: timestamp('createdAt').defaultNow().notNull(),
-  updatedAt: timestamp('updatedAt').defaultNow().notNull(),
-});
+export const accounts = pgTable(
+  "account",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").$type<AdapterAccountType>().notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("providerAccountId").notNull(),
+    refresh_token: text("refresh_token"),
+    access_token: text("access_token"),
+    expires_at: integer("expires_at"),
+    token_type: text("token_type"),
+    scope: text("scope"),
+    id_token: text("id_token"),
+    session_state: text("session_state"),
+  },
+  (account) => ({
+    compoundKey: primaryKey({
+      columns: [account.provider, account.providerAccountId],
+    }),
+  })
+)
+ 
+export const sessions = pgTable("session", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+})
+ 
+export const verificationTokens = pgTable(
+  "verificationToken",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { mode: "date" }).notNull(),
+  },
+  (verificationToken) => ({
+    compositePk: primaryKey({
+      columns: [verificationToken.identifier, verificationToken.token],
+    }),
+  })
+)
+ 
+export const authenticators = pgTable(
+  "authenticator",
+  {
+    credentialID: text("credentialID").notNull().unique(),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    providerAccountId: text("providerAccountId").notNull(),
+    credentialPublicKey: text("credentialPublicKey").notNull(),
+    counter: integer("counter").notNull(),
+    credentialDeviceType: text("credentialDeviceType").notNull(),
+    credentialBackedUp: boolean("credentialBackedUp").notNull(),
+    transports: text("transports"),
+  },
+  (authenticator) => ({
+    compositePK: primaryKey({
+      columns: [authenticator.userId, authenticator.credentialID],
+    }),
+  })
+)
