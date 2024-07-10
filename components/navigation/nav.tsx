@@ -15,7 +15,7 @@ export default async function Nav() {
           {!session ? (
             <li>
               <Button asChild>
-                <Link className="flex gap-2 items-center" href="/api/auth/signin">
+                <Link className="flex gap-2 items-center" href="/auth/login">
                   <span>Login</span>
                 </Link>
               </Button>
