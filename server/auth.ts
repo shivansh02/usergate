@@ -4,48 +4,44 @@ import { db } from "@/server"
 import Google from "next-auth/providers/google"
 import Github from "next-auth/providers/github"
 import Credentials from "next-auth/providers/credentials"
-import { saltAndHashPassword } from "@/utils/password"
-import { getUserFromDb } from "@/utils/db"
- 
+import { LoginSchema } from "@/types/login-schema"
+import { eq } from "drizzle-orm"
+import { users } from "./schema"
+import bcrypt from "bcryptjs"
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db),
-  session: {
-    strategy: "jwt",
-  },
+  secret: process.env.AUTH_SECRET,
+  session: { strategy: "jwt" },
+
   providers: [
     Google({
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        }),
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
     Github({
-        clientId: process.env.GITHUB_CLIENT_ID,
-        clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        }),
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
     Credentials({
-        // You can specify which fields should be submitted, by adding keys to the `credentials` object.
-        // e.g. domain, username, password, 2FA token, etc.
-        credentials: {
-            email: {},
-            password: {},
-        },
-        authorize: async (credentials) => {
-            let user = null
-    
-            // logic to salt and hash password
-            const pwHash = saltAndHashPassword(credentials.password as string)
-    
-            // logic to verify if user exists
-            user = await getUserFromDb(credentials.email as string, pwHash)
-    
-            if (!user) {
-            // No user found, so this is their first attempt to login
-            // meaning this is also the place you could do registration
-            throw new Error("User not found.")
-            }
-    
-            // return user object with the their profile data
-            return user
-        },
-        }),
+      authorize: async (credentials) => {
+        const validatedFields = LoginSchema.safeParse(credentials)
+
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data
+
+          const user = await db.query.users.findFirst({
+            where: eq(users.email, email),
+          })
+          if (!user || !user.password) return null
+
+          const passwordMatch = await bcrypt.compare(password, user.password)
+          if (passwordMatch) return user
+        }
+        return null
+      },
+    }),
   ],
 })

@@ -22,6 +22,34 @@
       "when": 1720512976174,
       "tag": "0002_smiling_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1720603209362,
+      "tag": "0003_fluffy_adam_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1720696268773,
+      "tag": "0004_bent_madame_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1720696678703,
+      "tag": "0005_stormy_victor_mancha",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1720696783525,
+      "tag": "0006_steep_inertia",
+      "breakpoints": true
     }
   ]
 }
