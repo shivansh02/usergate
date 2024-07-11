@@ -5,7 +5,6 @@ import {
   text,
   primaryKey,
   integer,
-  pgEnum,
   serial,
   varchar,
 } from "drizzle-orm/pg-core"
@@ -20,8 +19,6 @@ const pool = postgres(connectionString, { max: 1 })
  
 export const db = drizzle(pool)
 
-export const RoleEnum = pgEnum("role", ["user", "mod", "admin"])
- 
 export const users = pgTable("user", {
   id: text("id")
     .primaryKey()
@@ -32,8 +29,8 @@ export const users = pgTable("user", {
   password: text("password"),
   image: text("image"),
   twoFactorEnabled: boolean("twoFactorEnabled").default(false),
-  role: RoleEnum("roles").default("user"),
 });
+
 export const accounts = pgTable(
   "account",
   {
